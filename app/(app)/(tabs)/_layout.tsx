@@ -1,17 +1,12 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { Text } from 'react-native';
+import { BookOpen, Compass, Home, SmilePlus, User } from 'lucide-react-native';
 import { Colors } from '../../../src/constants/theme';
-
-function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
-  return (
-    <Text style={{ fontSize: focused ? 26 : 22, opacity: focused ? 1 : 0.6 }}>
-      {emoji}
-    </Text>
-  );
-}
+import { useTranslation } from '../../../src/i18n/useTranslation';
 
 export default function TabsLayout() {
+  const { t } = useTranslation();
+
   return (
     <Tabs
       screenOptions={{
@@ -34,36 +29,36 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="home"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} />,
+          title: t.tabs.home,
+          tabBarIcon: ({ color, size }) => <Home size={size ?? 22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="mood"
         options={{
-          title: 'Mood',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="💭" focused={focused} />,
+          title: t.tabs.mood,
+          tabBarIcon: ({ color, size }) => <SmilePlus size={size ?? 22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="journal"
         options={{
-          title: 'Journal',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="📔" focused={focused} />,
+          title: t.tabs.journal,
+          tabBarIcon: ({ color, size }) => <BookOpen size={size ?? 22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="discover"
         options={{
-          title: 'Discover',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="✨" focused={focused} />,
+          title: t.tabs.discover,
+          tabBarIcon: ({ color, size }) => <Compass size={size ?? 22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="👤" focused={focused} />,
+          title: t.tabs.profile,
+          tabBarIcon: ({ color, size }) => <User size={size ?? 22} color={color} />,
         }}
       />
     </Tabs>

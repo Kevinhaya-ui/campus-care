@@ -9,9 +9,11 @@ import { useAuthStore } from '../src/store/authStore';
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const { setSession, fetchProfile, loading } = useAuthStore();
+  const { setSession, fetchProfile, initLanguage, loading } = useAuthStore();
 
   useEffect(() => {
+    initLanguage();
+
     // Restore session on app start
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);

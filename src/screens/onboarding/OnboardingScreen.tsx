@@ -1,61 +1,21 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Alert, Platform, KeyboardAvoidingView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Check, Flame, Leaf, Smile } from 'lucide-react-native';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
+import { useTranslation } from '../../i18n/useTranslation';
 import { Button } from '../../components/ui/Button';
+import { Illustration, IllustrationName } from '../../components/ui/Illustration';
 import { Colors, Spacing, FontSize, Radius } from '../../constants/theme';
-
-const STEPS = [
-  {
-    id: 'challenges',
-    title: 'What are your biggest challenges right now?',
-    subtitle: 'Select all that apply. This helps us personalize your experience.',
-    emoji: '🌊',
-    multi: true,
-    options: [
-      { label: 'Academic pressure', value: 'academic' },
-      { label: 'Relationships', value: 'relationships' },
-      { label: 'Financial difficulties', value: 'financial' },
-      { label: 'Personal development', value: 'personal' },
-      { label: 'Family', value: 'family' },
-      { label: 'Other', value: 'other' },
-    ],
-  },
-  {
-    id: 'goals',
-    title: 'What would you like to improve?',
-    subtitle: 'Choose your wellness goals.',
-    emoji: '🌟',
-    multi: true,
-    options: [
-      { label: 'Understanding my emotions', value: 'emotions' },
-      { label: 'Managing stress', value: 'stress' },
-      { label: 'Building confidence', value: 'confidence' },
-      { label: 'Improving sleep habits', value: 'sleep' },
-      { label: 'Developing healthier routines', value: 'routines' },
-    ],
-  },
-  {
-    id: 'communication',
-    title: 'How would you prefer your AI companion to communicate?',
-    subtitle: 'You can change this anytime in settings.',
-    emoji: '💬',
-    multi: false,
-    options: [
-      { label: '😊 Friendly and casual', value: 'friendly' },
-      { label: '🌿 Calm and supportive', value: 'calm' },
-      { label: '🔥 Motivational and encouraging', value: 'motivational' },
-    ],
-  },
-];
 
 export default function OnboardingScreen() {
   const router = useRouter();
   const { user, fetchProfile } = useAuthStore();
+  const { t } = useTranslation();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({
     challenges: [],
@@ -64,17 +24,64 @@ export default function OnboardingScreen() {
   });
   const [loading, setLoading] = useState(false);
 
-  const current = STEPS[step];
+  const steps = useMemo(
+    () => [
+      {
+        id: 'challenges' as const,
+        title: t.onboarding.challengesTitle,
+        subtitle: t.onboarding.challengesSubtitle,
+        illustration: 'challenges' as IllustrationName,
+        multi: true,
+        options: [
+          { label: t.onboarding.options.academic, value: 'academic' },
+          { label: t.onboarding.options.relationships, value: 'relationships' },
+          { label: t.onboarding.options.financial, value: 'financial' },
+          { label: t.onboarding.options.personal, value: 'personal' },
+          { label: t.onboarding.options.family, value: 'family' },
+          { label: t.onboarding.options.other, value: 'other' },
+        ],
+      },
+      {
+        id: 'goals' as const,
+        title: t.onboarding.goalsTitle,
+        subtitle: t.onboarding.goalsSubtitle,
+        illustration: 'goals' as IllustrationName,
+        multi: true,
+        options: [
+          { label: t.onboarding.options.emotions, value: 'emotions' },
+          { label: t.onboarding.options.stress, value: 'stress' },
+          { label: t.onboarding.options.confidence, value: 'confidence' },
+          { label: t.onboarding.options.sleep, value: 'sleep' },
+          { label: t.onboarding.options.routines, value: 'routines' },
+        ],
+      },
+      {
+        id: 'communication' as const,
+        title: t.onboarding.communicationTitle,
+        subtitle: t.onboarding.communicationSubtitle,
+        illustration: 'communication' as IllustrationName,
+        multi: false,
+        options: [
+          { label: t.onboarding.options.friendly, value: 'friendly', Icon: Smile },
+          { label: t.onboarding.options.calm, value: 'calm', Icon: Leaf },
+          { label: t.onboarding.options.motivational, value: 'motivational', Icon: Flame },
+        ],
+      },
+    ],
+    [t]
+  );
+
+  const current = steps[step];
 
   const toggleOption = (value: string) => {
-    const key = current.id === 'challenges' ? 'challenges' : current.id === 'goals' ? 'goals' : 'communication';
+    const key = current.id;
     if (current.multi) {
-      const current_vals = answers[key] as string[];
+      const currentVals = answers[key] as string[];
       setAnswers({
         ...answers,
-        [key]: current_vals.includes(value)
-          ? current_vals.filter((v) => v !== value)
-          : [...current_vals, value],
+        [key]: currentVals.includes(value)
+          ? currentVals.filter((v) => v !== value)
+          : [...currentVals, value],
       });
     } else {
       setAnswers({ ...answers, [key]: value });
@@ -82,13 +89,12 @@ export default function OnboardingScreen() {
   };
 
   const isSelected = (value: string) => {
-    const key = current.id === 'challenges' ? 'challenges' : current.id === 'goals' ? 'goals' : 'communication';
-    const val = answers[key];
+    const val = answers[current.id];
     return Array.isArray(val) ? val.includes(value) : val === value;
   };
 
   const handleNext = () => {
-    if (step < STEPS.length - 1) {
+    if (step < steps.length - 1) {
       setStep(step + 1);
     } else {
       handleFinish();
@@ -109,7 +115,7 @@ export default function OnboardingScreen() {
       await fetchProfile();
       router.replace('/(app)/(tabs)/home');
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      Alert.alert(t.common.error, error.message);
     } finally {
       setLoading(false);
     }
@@ -131,46 +137,54 @@ export default function OnboardingScreen() {
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Progress */}
         <View style={styles.progress}>
-          {STEPS.map((_, i) => (
+          {steps.map((_, i) => (
             <View key={i} style={[styles.dot, i === step && styles.dotActive, i < step && styles.dotDone]} />
           ))}
         </View>
 
-        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.emoji}>{current.emoji}</Text>
+          <Illustration name={current.illustration} width={190} height={135} />
           <Text style={styles.title}>{current.title}</Text>
           <Text style={styles.subtitle}>{current.subtitle}</Text>
         </View>
 
-        {/* Options */}
         <View style={styles.options}>
-          {current.options.map((opt) => (
-            <TouchableOpacity
-              key={opt.value}
-              style={[styles.option, isSelected(opt.value) && styles.optionSelected]}
-              onPress={() => toggleOption(opt.value)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.optionText, isSelected(opt.value) && styles.optionTextSelected]}>
-                {opt.label}
-              </Text>
-              {isSelected(opt.value) && <Text style={styles.check}>✓</Text>}
-            </TouchableOpacity>
-          ))}
+          {current.options.map((opt) => {
+            const selected = isSelected(opt.value);
+            const OptionIcon = 'Icon' in opt ? opt.Icon : undefined;
+            return (
+              <TouchableOpacity
+                key={opt.value}
+                style={[styles.option, selected && styles.optionSelected]}
+                onPress={() => toggleOption(opt.value)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.optionLeft}>
+                  {OptionIcon && (
+                    <OptionIcon
+                      size={18}
+                      color={selected ? Colors.primary : Colors.muted}
+                    />
+                  )}
+                  <Text style={[styles.optionText, selected && styles.optionTextSelected]}>
+                    {opt.label}
+                  </Text>
+                </View>
+                {selected && <Check size={18} color={Colors.primary} strokeWidth={2.5} />}
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        {/* Actions */}
         <View style={styles.actions}>
           <Button
-            title={step < STEPS.length - 1 ? 'Next' : 'Get Started'}
+            title={step < steps.length - 1 ? t.common.next : t.common.getStarted}
             onPress={handleNext}
             loading={loading}
           />
           <TouchableOpacity onPress={handleSkip} style={styles.skipBtn}>
-            <Text style={styles.skipText}>Skip for now</Text>
+            <Text style={styles.skipText}>{t.common.skipForNow}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -181,14 +195,13 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: Colors.warmwhite },
   container: { flex: 1 },
-  content: { padding: Spacing.lg, paddingBottom: Spacing.xxl },
-  progress: { flexDirection: 'row', gap: 8, marginBottom: Spacing.xl, justifyContent: 'center' },
+  content: { padding: Spacing.lg, paddingBottom: Spacing.xxl, paddingTop: Spacing.xl },
+  progress: { flexDirection: 'row', gap: 8, marginBottom: Spacing.lg, justifyContent: 'center' },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#D1D5DB' },
   dotActive: { width: 24, backgroundColor: Colors.primary },
   dotDone: { backgroundColor: Colors.success },
   header: { alignItems: 'center', marginBottom: Spacing.xl },
-  emoji: { fontSize: 44, marginBottom: Spacing.sm },
-  title: { fontSize: FontSize.xl, fontWeight: '700', color: Colors.navy, textAlign: 'center', marginBottom: 8 },
+  title: { fontSize: FontSize.xl, fontWeight: '700', color: Colors.navy, textAlign: 'center', marginTop: Spacing.sm, marginBottom: 8 },
   subtitle: { fontSize: FontSize.sm, color: Colors.muted, textAlign: 'center', lineHeight: 20 },
   options: { gap: Spacing.sm, marginBottom: Spacing.xl },
   option: {
@@ -202,9 +215,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
   },
   optionSelected: { borderColor: Colors.primary, backgroundColor: Colors.lavender },
+  optionLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
   optionText: { fontSize: FontSize.base, color: Colors.navy },
   optionTextSelected: { color: Colors.primary, fontWeight: '600' },
-  check: { color: Colors.primary, fontWeight: '700', fontSize: FontSize.base },
   actions: { gap: Spacing.sm },
   skipBtn: { alignItems: 'center', paddingVertical: Spacing.sm },
   skipText: { color: Colors.muted, fontSize: FontSize.sm },

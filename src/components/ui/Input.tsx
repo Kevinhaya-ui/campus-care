@@ -8,6 +8,7 @@ import {
   TextInputProps,
   ViewStyle,
 } from 'react-native';
+import { Eye, EyeOff } from 'lucide-react-native';
 import { Colors, Radius, FontSize, Spacing } from '../../constants/theme';
 
 interface InputProps extends TextInputProps {
@@ -54,8 +55,13 @@ export function Input({
           <TouchableOpacity
             onPress={() => setShowPassword(!showPassword)}
             style={styles.iconBtn}
+            hitSlop={8}
           >
-            <Text style={styles.showHide}>{showPassword ? 'Hide' : 'Show'}</Text>
+            {showPassword ? (
+              <EyeOff size={20} color={Colors.primary} />
+            ) : (
+              <Eye size={20} color={Colors.muted} />
+            )}
           </TouchableOpacity>
         )}
         {rightIcon && !isPassword && (
@@ -97,7 +103,6 @@ const styles = StyleSheet.create({
     color: Colors.navy,
   },
   iconBtn: { paddingLeft: Spacing.sm },
-  showHide: { color: Colors.primary, fontSize: FontSize.sm, fontWeight: '600' },
   error: { color: Colors.danger, fontSize: FontSize.xs, marginTop: 4 },
   hint: { color: Colors.muted, fontSize: FontSize.xs, marginTop: 4 },
 });

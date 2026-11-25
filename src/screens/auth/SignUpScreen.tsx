@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -13,30 +13,44 @@ import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Check, Lock } from 'lucide-react-native';
 import { supabase } from '../../lib/supabase';
+import { useTranslation } from '../../i18n/useTranslation';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { Illustration } from '../../components/ui/Illustration';
+import { LanguageToggle } from '../../components/ui/LanguageToggle';
 import { Colors, Spacing, FontSize } from '../../constants/theme';
 
-const schema = z
-  .object({
-    fullName: z.string().min(2, 'Please enter your full name'),
-    email: z.string().email('Please enter a valid email address'),
-    password: z.string().min(8, 'Password must be at least 8 characters'),
-    confirmPassword: z.string(),
-  })
-  .refine((d) => d.password === d.confirmPassword, {
-    message: 'Passwords do not match',
-    path: ['confirmPassword'],
-  });
-
-type FormData = z.infer<typeof schema>;
+type FormData = {
+  fullName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+};
 
 export default function SignUpScreen() {
   const router = useRouter();
+  const { t, language } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [tosAccepted, setTosAccepted] = useState(false);
   const [privacyConsent, setPrivacyConsent] = useState(false);
+
+  const schema = useMemo(
+    () =>
+      z
+        .object({
+          fullName: z.string().min(2, t.auth.validation.fullNameMin),
+          email: z.string().email(t.auth.validation.emailInvalid),
+          password: z.string().min(8, t.auth.validation.passwordMin),
+          confirmPassword: z.string(),
+        })
+        .refine((d) => d.password === d.confirmPassword, {
+          message: t.auth.validation.passwordMismatch,
+          path: ['confirmPassword'],
+        }),
+    [t]
+  );
 
   const {
     control,
@@ -46,10 +60,7 @@ export default function SignUpScreen() {
 
   const onSubmit = async (data: FormData) => {
     if (!tosAccepted || !privacyConsent) {
-      Alert.alert(
-        'Consent Required',
-        'Please accept the Terms of Service and Privacy Policy to continue.'
-      );
+      Alert.alert(t.auth.consentRequiredTitle, t.auth.consentRequiredMsg);
       return;
     }
 
@@ -69,23 +80,23 @@ export default function SignUpScreen() {
 
       if (error) throw error;
 
-      // Update profile with name and consent
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         await supabase.from('profiles').update({
           full_name: data.fullName,
+          preferred_language: language,
           tos_accepted: tosAccepted,
           privacy_consent: privacyConsent,
         }).eq('id', session.user.id);
       }
 
       Alert.alert(
-        'Account Created! 🎉',
-        'Please check your email to verify your account, then sign in.',
-        [{ text: 'Sign In', onPress: () => router.replace('/(auth)/login') }]
+        t.auth.accountCreatedTitle,
+        t.auth.accountCreatedMsg,
+        [{ text: t.auth.signIn, onPress: () => router.replace('/(auth)/login') }]
       );
     } catch (error: any) {
-      Alert.alert('Sign Up Failed', error.message);
+      Alert.alert(t.auth.signupFailed, error.message);
     } finally {
       setLoading(false);
     }
@@ -102,24 +113,24 @@ export default function SignUpScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.emoji}>🌱</Text>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>
-            Your personal space to understand your feelings and find support.
-          </Text>
+        <View style={styles.topBar}>
+          <LanguageToggle />
         </View>
 
-        {/* Form */}
+        <View style={styles.header}>
+          <Illustration name="signup" width={200} height={140} />
+          <Text style={styles.title}>{t.auth.createAccount}</Text>
+          <Text style={styles.subtitle}>{t.auth.signupSubtitle}</Text>
+        </View>
+
         <View style={styles.form}>
           <Controller
             control={control}
             name="fullName"
             render={({ field: { onChange, value } }) => (
               <Input
-                label="Full Name"
-                placeholder="Your name or preferred display name"
+                label={t.auth.fullNameLabel}
+                placeholder={t.auth.fullNamePlaceholder}
                 value={value}
                 onChangeText={onChange}
                 error={errors.fullName?.message}
@@ -133,8 +144,8 @@ export default function SignUpScreen() {
             name="email"
             render={({ field: { onChange, value } }) => (
               <Input
-                label="Email Address"
-                placeholder="student@university.ac.id"
+                label={t.auth.emailLabel}
+                placeholder={t.auth.emailPlaceholder}
                 value={value}
                 onChangeText={onChange}
                 error={errors.email?.message}
@@ -148,8 +159,8 @@ export default function SignUpScreen() {
             name="password"
             render={({ field: { onChange, value } }) => (
               <Input
-                label="Password"
-                placeholder="At least 8 characters"
+                label={t.auth.passwordLabel}
+                placeholder={t.auth.passwordMinPlaceholder}
                 value={value}
                 onChangeText={onChange}
                 error={errors.password?.message}
@@ -163,8 +174,8 @@ export default function SignUpScreen() {
             name="confirmPassword"
             render={({ field: { onChange, value } }) => (
               <Input
-                label="Confirm Password"
-                placeholder="Re-enter your password"
+                label={t.auth.confirmPasswordLabel}
+                placeholder={t.auth.confirmPasswordPlaceholder}
                 value={value}
                 onChangeText={onChange}
                 error={errors.confirmPassword?.message}
@@ -173,7 +184,6 @@ export default function SignUpScreen() {
             )}
           />
 
-          {/* Consent */}
           <View style={styles.consentSection}>
             <TouchableOpacity
               style={styles.checkRow}
@@ -181,11 +191,11 @@ export default function SignUpScreen() {
               activeOpacity={0.7}
             >
               <View style={[styles.checkbox, tosAccepted && styles.checkboxChecked]}>
-                {tosAccepted && <Text style={styles.checkmark}>✓</Text>}
+                {tosAccepted && <Check size={14} color={Colors.white} strokeWidth={3} />}
               </View>
               <Text style={styles.consentText}>
-                I agree to the{' '}
-                <Text style={styles.link}>Terms of Service</Text>
+                {t.auth.agreeTosPrefix}
+                <Text style={styles.link}>{t.auth.tosLink}</Text>
               </Text>
             </TouchableOpacity>
 
@@ -195,23 +205,22 @@ export default function SignUpScreen() {
               activeOpacity={0.7}
             >
               <View style={[styles.checkbox, privacyConsent && styles.checkboxChecked]}>
-                {privacyConsent && <Text style={styles.checkmark}>✓</Text>}
+                {privacyConsent && <Check size={14} color={Colors.white} strokeWidth={3} />}
               </View>
               <Text style={styles.consentText}>
-                I consent to the processing of my personal and health-related data as described in the{' '}
-                <Text style={styles.link}>Privacy Policy</Text>
+                {t.auth.agreePrivacyPrefix}
+                <Text style={styles.link}>{t.auth.privacyLink}</Text>
               </Text>
             </TouchableOpacity>
 
             <View style={styles.privacyNote}>
-              <Text style={styles.privacyNoteText}>
-                🔒 Your mental wellness data is private and encrypted. It is never shared without your explicit consent.
-              </Text>
+              <Lock size={16} color={Colors.primary} style={styles.lockIcon} />
+              <Text style={styles.privacyNoteText}>{t.auth.privacyNote}</Text>
             </View>
           </View>
 
           <Button
-            title="Create Account"
+            title={t.auth.createAccount}
             onPress={handleSubmit(onSubmit)}
             loading={loading}
           />
@@ -221,8 +230,8 @@ export default function SignUpScreen() {
             onPress={() => router.replace('/(auth)/login')}
           >
             <Text style={styles.loginText}>
-              Already have an account?{' '}
-              <Text style={styles.link}>Sign In</Text>
+              {t.auth.alreadyHaveAccount}{' '}
+              <Text style={styles.link}>{t.auth.signIn}</Text>
             </Text>
           </TouchableOpacity>
         </View>
@@ -234,10 +243,10 @@ export default function SignUpScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: Colors.warmwhite },
   container: { flex: 1 },
-  content: { padding: Spacing.lg, paddingBottom: Spacing.xxl },
-  header: { alignItems: 'center', marginBottom: Spacing.xl, marginTop: Spacing.lg },
-  emoji: { fontSize: 48, marginBottom: Spacing.sm },
-  title: { fontSize: FontSize['2xl'], fontWeight: '700', color: Colors.navy, marginBottom: 8 },
+  content: { padding: Spacing.lg, paddingBottom: Spacing.xxl, paddingTop: Spacing.xl },
+  topBar: { alignItems: 'flex-end', marginBottom: Spacing.sm },
+  header: { alignItems: 'center', marginBottom: Spacing.lg },
+  title: { fontSize: FontSize['2xl'], fontWeight: '700', color: Colors.navy, marginTop: Spacing.sm, marginBottom: 6 },
   subtitle: { fontSize: FontSize.base, color: Colors.muted, textAlign: 'center', lineHeight: 22 },
   form: { gap: 0 },
   consentSection: { marginVertical: Spacing.md, gap: Spacing.sm },
@@ -254,16 +263,19 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   checkboxChecked: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  checkmark: { color: Colors.white, fontSize: 13, fontWeight: '700' },
   consentText: { flex: 1, fontSize: FontSize.sm, color: Colors.navy, lineHeight: 20 },
   link: { color: Colors.primary, fontWeight: '600' },
   privacyNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
     backgroundColor: Colors.lavender,
     borderRadius: 10,
     padding: Spacing.sm,
     marginTop: 4,
   },
-  privacyNoteText: { fontSize: FontSize.xs, color: Colors.navy, lineHeight: 18 },
+  lockIcon: { marginTop: 2 },
+  privacyNoteText: { flex: 1, fontSize: FontSize.xs, color: Colors.navy, lineHeight: 18 },
   loginLink: { alignItems: 'center', marginTop: Spacing.lg },
   loginText: { fontSize: FontSize.sm, color: Colors.muted },
 });

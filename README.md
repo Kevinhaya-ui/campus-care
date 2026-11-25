@@ -40,7 +40,7 @@ npm install
    EXPO_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
    EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-public-key
    ```
-   > ⚠️ **Note:** Restart the Expo dev server (`Ctrl+C`, then `npx expo start -c`) whenever you edit `.env`.
+   > ⚠️ **Note:** Restart the Expo dev server (`Ctrl+C`, then so) whenever you edit `.env`.
 
 ### Step 4: Run Database Migrations
 1. In your Supabase dashboard, open **SQL Editor** from the left sidebar and click **New query**.

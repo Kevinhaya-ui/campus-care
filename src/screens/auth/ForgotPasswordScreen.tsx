@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Alert,
   TouchableOpacity, KeyboardAvoidingView, Platform,
@@ -7,20 +7,30 @@ import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ArrowLeft } from 'lucide-react-native';
 import { supabase } from '../../lib/supabase';
+import { useTranslation } from '../../i18n/useTranslation';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { Illustration } from '../../components/ui/Illustration';
+import { LanguageToggle } from '../../components/ui/LanguageToggle';
 import { Colors, Spacing, FontSize } from '../../constants/theme';
 
-const schema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-});
-type FormData = z.infer<typeof schema>;
+type FormData = { email: string };
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+
+  const schema = useMemo(
+    () =>
+      z.object({
+        email: z.string().email(t.auth.validation.emailInvalid),
+      }),
+    [t]
+  );
 
   const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -35,7 +45,7 @@ export default function ForgotPasswordScreen() {
       if (error) throw error;
       setSent(true);
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      Alert.alert(t.common.error, error.message);
     } finally {
       setLoading(false);
     }
@@ -44,26 +54,29 @@ export default function ForgotPasswordScreen() {
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
+        <View style={styles.topBar}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+            <ArrowLeft size={18} color={Colors.primary} />
+            <Text style={styles.backText}>{t.common.back}</Text>
+          </TouchableOpacity>
+          <LanguageToggle />
+        </View>
 
         <View style={styles.header}>
-          <Text style={styles.emoji}>🔑</Text>
-          <Text style={styles.title}>Reset Password</Text>
-          <Text style={styles.subtitle}>
-            Enter your email address and we'll send you a password reset link.
-          </Text>
+          <Illustration name={sent ? 'emailSent' : 'forgotPassword'} width={190} height={140} />
+          <Text style={styles.title}>{t.auth.resetPasswordTitle}</Text>
+          <Text style={styles.subtitle}>{t.auth.resetPasswordSubtitle}</Text>
         </View>
 
         {sent ? (
           <View style={styles.successBox}>
-            <Text style={styles.successEmoji}>📬</Text>
-            <Text style={styles.successTitle}>Check your inbox</Text>
-            <Text style={styles.successText}>
-              We've sent a password reset link to your email. Please check your inbox and follow the instructions.
-            </Text>
-            <Button title="Back to Sign In" onPress={() => router.replace('/(auth)/login')} style={{ marginTop: Spacing.lg }} />
+            <Text style={styles.successTitle}>{t.auth.checkInboxTitle}</Text>
+            <Text style={styles.successText}>{t.auth.checkInboxMsg}</Text>
+            <Button
+              title={t.auth.backToSignIn}
+              onPress={() => router.replace('/(auth)/login')}
+              style={{ marginTop: Spacing.lg }}
+            />
           </View>
         ) : (
           <>
@@ -72,8 +85,8 @@ export default function ForgotPasswordScreen() {
               name="email"
               render={({ field: { onChange, value } }) => (
                 <Input
-                  label="Email Address"
-                  placeholder="student@university.ac.id"
+                  label={t.auth.emailLabel}
+                  placeholder={t.auth.emailPlaceholder}
                   value={value}
                   onChangeText={onChange}
                   error={errors.email?.message}
@@ -81,7 +94,7 @@ export default function ForgotPasswordScreen() {
                 />
               )}
             />
-            <Button title="Send Reset Link" onPress={handleSubmit(onSubmit)} loading={loading} />
+            <Button title={t.auth.sendResetLink} onPress={handleSubmit(onSubmit)} loading={loading} />
           </>
         )}
       </ScrollView>
@@ -92,15 +105,14 @@ export default function ForgotPasswordScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: Colors.warmwhite },
   container: { flex: 1 },
-  content: { padding: Spacing.lg, paddingBottom: Spacing.xxl },
-  back: { marginBottom: Spacing.lg },
+  content: { padding: Spacing.lg, paddingBottom: Spacing.xxl, paddingTop: Spacing.xl },
+  topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.lg },
+  back: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   backText: { color: Colors.primary, fontSize: FontSize.base, fontWeight: '600' },
   header: { alignItems: 'center', marginBottom: Spacing.xl },
-  emoji: { fontSize: 48, marginBottom: Spacing.sm },
-  title: { fontSize: FontSize['2xl'], fontWeight: '700', color: Colors.navy, marginBottom: 8 },
+  title: { fontSize: FontSize['2xl'], fontWeight: '700', color: Colors.navy, marginTop: Spacing.sm, marginBottom: 8 },
   subtitle: { fontSize: FontSize.base, color: Colors.muted, textAlign: 'center', lineHeight: 22 },
   successBox: { alignItems: 'center', padding: Spacing.xl, backgroundColor: Colors.mint, borderRadius: 16 },
-  successEmoji: { fontSize: 40, marginBottom: Spacing.sm },
   successTitle: { fontSize: FontSize.lg, fontWeight: '700', color: Colors.navy, marginBottom: 8 },
   successText: { fontSize: FontSize.sm, color: Colors.navy, textAlign: 'center', lineHeight: 20 },
 });

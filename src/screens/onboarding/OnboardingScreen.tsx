@@ -9,6 +9,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
 import { useTranslation } from '../../i18n/useTranslation';
 import { Button } from '../../components/ui/Button';
+import { FadeInView } from '../../components/ui/AnimatedPrimitives';
 import { Illustration, IllustrationName } from '../../components/ui/Illustration';
 import { Colors, Spacing, FontSize, Radius } from '../../constants/theme';
 
@@ -143,39 +144,41 @@ export default function OnboardingScreen() {
           ))}
         </View>
 
-        <View style={styles.header}>
-          <Illustration name={current.illustration} width={190} height={135} />
-          <Text style={styles.title}>{current.title}</Text>
-          <Text style={styles.subtitle}>{current.subtitle}</Text>
-        </View>
+        <FadeInView key={step} offsetY={10} duration={260}>
+          <View style={styles.header}>
+            <Illustration name={current.illustration} width={190} height={135} />
+            <Text style={styles.title}>{current.title}</Text>
+            <Text style={styles.subtitle}>{current.subtitle}</Text>
+          </View>
 
-        <View style={styles.options}>
-          {current.options.map((opt) => {
-            const selected = isSelected(opt.value);
-            const OptionIcon = 'Icon' in opt ? opt.Icon : undefined;
-            return (
-              <TouchableOpacity
-                key={opt.value}
-                style={[styles.option, selected && styles.optionSelected]}
-                onPress={() => toggleOption(opt.value)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.optionLeft}>
-                  {OptionIcon && (
-                    <OptionIcon
-                      size={18}
-                      color={selected ? Colors.primary : Colors.muted}
-                    />
-                  )}
-                  <Text style={[styles.optionText, selected && styles.optionTextSelected]}>
-                    {opt.label}
-                  </Text>
-                </View>
-                {selected && <Check size={18} color={Colors.primary} strokeWidth={2.5} />}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+          <View style={styles.options}>
+            {current.options.map((opt) => {
+              const selected = isSelected(opt.value);
+              const OptionIcon = 'Icon' in opt ? opt.Icon : undefined;
+              return (
+                <TouchableOpacity
+                  key={opt.value}
+                  style={[styles.option, selected && styles.optionSelected]}
+                  onPress={() => toggleOption(opt.value)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.optionLeft}>
+                    {OptionIcon && (
+                      <OptionIcon
+                        size={18}
+                        color={selected ? Colors.primary : Colors.muted}
+                      />
+                    )}
+                    <Text style={[styles.optionText, selected && styles.optionTextSelected]}>
+                      {opt.label}
+                    </Text>
+                  </View>
+                  {selected && <Check size={18} color={Colors.primary} strokeWidth={2.5} />}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </FadeInView>
 
         <View style={styles.actions}>
           <Button

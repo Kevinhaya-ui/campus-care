@@ -20,6 +20,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Illustration } from '../../components/ui/Illustration';
 import { LanguageToggle } from '../../components/ui/LanguageToggle';
+import { FadeInView } from '../../components/ui/AnimatedPrimitives';
 import { Colors, Spacing, FontSize } from '../../constants/theme';
 
 type FormData = {
@@ -79,13 +80,16 @@ export default function LoginScreen() {
           <LanguageToggle />
         </View>
 
-        <View style={styles.header}>
-          <Illustration name="login" width={200} height={150} />
-          <Text style={styles.title}>{t.auth.welcomeBack}</Text>
-          <Text style={styles.subtitle}>{t.auth.loginSubtitle}</Text>
-        </View>
+        <FadeInView delay={0}>
+          <View style={styles.header}>
+            <Illustration name="login" width={200} height={150} />
+            <Text style={styles.title}>{t.auth.welcomeBack}</Text>
+            <Text style={styles.subtitle}>{t.auth.loginSubtitle}</Text>
+          </View>
+        </FadeInView>
 
-        <View style={styles.form}>
+        <FadeInView delay={80}>
+          <View style={styles.form}>
           <Controller
             control={control}
             name="email"
@@ -138,7 +142,8 @@ export default function LoginScreen() {
               <Text style={styles.link}>{t.auth.createOne}</Text>
             </Text>
           </TouchableOpacity>
-        </View>
+          </View>
+        </FadeInView>
       </ScrollView>
     </KeyboardAvoidingView>
   );

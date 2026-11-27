@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   RefreshControl, ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import {
@@ -20,17 +20,13 @@ import { useAuthStore } from '../../store/authStore';
 import { useTranslation } from '../../i18n/useTranslation';
 import { Card } from '../../components/ui/Card';
 import { Illustration } from '../../components/ui/Illustration';
+import { FadeInView, ScalePressable } from '../../components/ui/AnimatedPrimitives';
 import { Colors, Spacing, FontSize, Radius } from '../../constants/theme';
+import { filterCardsByLanguage, MotivationalCardRow } from '../../constants/starterCards';
 
 interface TodayMood {
   mood: string;
   intensity: number;
-}
-
-interface DailyCard {
-  front_content: string;
-  category: string;
-  back_content: string | null;
 }
 
 export default function HomeScreen() {
@@ -38,7 +34,7 @@ export default function HomeScreen() {
   const { profile, user } = useAuthStore();
   const { t, language } = useTranslation();
   const [todayMood, setTodayMood] = useState<TodayMood | null>(null);
-  const [dailyCard, setDailyCard] = useState<DailyCard | null>(null);
+  const [dailyCard, setDailyCard] = useState<MotivationalCardRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -51,7 +47,7 @@ export default function HomeScreen() {
 
   const firstName = profile?.full_name?.split(' ')[0] ?? t.home.defaultName;
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!user) return;
     try {
       const today = dayjs().format('YYYY-MM-DD');
@@ -60,16 +56,17 @@ export default function HomeScreen() {
         .select('mood, intensity')
         .eq('user_id', user.id)
         .eq('entry_date', today)
-        .single();
+        .maybeSingle();
       setTodayMood(moodData ?? null);
 
       const { data: cards } = await supabase
         .from('motivational_cards')
-        .select('front_content, category, back_content')
+        .select('*')
         .eq('published', true);
       if (cards && cards.length > 0) {
+        const localized = filterCardsByLanguage(cards as MotivationalCardRow[], language);
         const dayOfYear = dayjs().diff(dayjs().startOf('year'), 'day');
-        setDailyCard(cards[dayOfYear % cards.length]);
+        setDailyCard(localized[dayOfYear % localized.length]);
       }
     } catch (_) {
       // Silently handle
@@ -77,11 +74,13 @@ export default function HomeScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [user, language]);
 
-  useEffect(() => {
-    loadData();
-  }, [user]);
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -107,7 +106,7 @@ export default function HomeScreen() {
   const quickItems = [
     { Icon: BookOpen, label: t.home.journal, route: '/(app)/(tabs)/journal', bg: Colors.mint },
     { Icon: Bot, label: t.home.aiCompanion, route: '/(app)/ai-chat', bg: Colors.lavender },
-    { Icon: BarChart3, label: t.home.moodHistory, route: '/(app)/(tabs)/mood', bg: Colors.skyblue },
+    { Icon: BarChart3, label: t.home.moodHistory, route: '/(app)/(tabs)/mood?tab=history', bg: Colors.skyblue },
     { Icon: Compass, label: t.home.discover, route: '/(app)/(tabs)/discover', bg: Colors.peach },
   ];
 
@@ -119,92 +118,101 @@ export default function HomeScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
     >
       {/* Greeting */}
-      <View style={styles.greetingSection}>
-        <Text style={styles.greetingText}>{greeting()},</Text>
-        <Text style={styles.greetingName}>{firstName}</Text>
-        <Text style={styles.dateText}>{formattedDate}</Text>
-      </View>
+      <FadeInView delay={0}>
+        <View style={styles.greetingSection}>
+          <Text style={styles.greetingText}>{greeting()},</Text>
+          <Text style={styles.greetingName}>{firstName}</Text>
+          <Text style={styles.dateText}>{formattedDate}</Text>
+        </View>
+      </FadeInView>
 
       {/* Today's Mood Check-In */}
-      <Card style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>{t.home.howFeelingToday}</Text>
-        </View>
-        {todayMood ? (
-          <View style={styles.moodDone}>
-            <View style={styles.moodIconBadge}>
-              <Smile size={24} color={Colors.primary} />
+      <FadeInView delay={70}>
+        <Card style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>{t.home.howFeelingToday}</Text>
+          </View>
+          {todayMood ? (
+            <View style={styles.moodDone}>
+              <View style={styles.moodIconBadge}>
+                <Smile size={24} color={Colors.primary} />
+              </View>
+              <View>
+                <Text style={styles.moodLabel}>{moodDisplay}</Text>
+                <Text style={styles.moodIntensity}>
+                  {t.home.intensity}: {todayMood.intensity}/5
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.editBtn}
+                onPress={() => router.push('/(app)/(tabs)/mood')}
+              >
+                <Text style={styles.editBtnText}>{t.common.edit}</Text>
+              </TouchableOpacity>
             </View>
+          ) : (
             <View>
-              <Text style={styles.moodLabel}>{moodDisplay}</Text>
-              <Text style={styles.moodIntensity}>
-                {t.home.intensity}: {todayMood.intensity}/5
-              </Text>
+              <View style={styles.illustrationCenter}>
+                <Illustration name="moodCheckin" width={170} height={115} />
+              </View>
+              <Text style={styles.moodPrompt}>{t.home.checkInPrompt}</Text>
+              <ScalePressable onPress={() => router.push('/(app)/(tabs)/mood')}>
+                <View style={styles.checkInBtn}>
+                  <Text style={styles.checkInBtnText}>{t.home.checkInNow}</Text>
+                </View>
+              </ScalePressable>
             </View>
-            <TouchableOpacity
-              style={styles.editBtn}
-              onPress={() => router.push('/(app)/(tabs)/mood')}
-            >
-              <Text style={styles.editBtnText}>{t.common.edit}</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View>
-            <View style={styles.illustrationCenter}>
-              <Illustration name="moodCheckin" width={170} height={115} />
-            </View>
-            <Text style={styles.moodPrompt}>{t.home.checkInPrompt}</Text>
-            <TouchableOpacity
-              style={styles.checkInBtn}
-              onPress={() => router.push('/(app)/(tabs)/mood')}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.checkInBtnText}>{t.home.checkInNow}</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </Card>
+          )}
+        </Card>
+      </FadeInView>
 
       {/* Daily Motivational Card */}
       {dailyCard && (
-        <Card style={[styles.card, styles.motivationCard]}>
-          <View style={styles.badgeRow}>
-            <Sparkles size={14} color={Colors.primary} />
-            <Text style={styles.categoryBadge}>{dailyCard.category}</Text>
-          </View>
-          <Text style={styles.motivationText}>"{dailyCard.front_content}"</Text>
-          {dailyCard.back_content && (
-            <Text style={styles.motivationSub}>{dailyCard.back_content}</Text>
-          )}
-        </Card>
+        <FadeInView delay={140}>
+          <Card style={[styles.card, styles.motivationCard]}>
+            <View style={styles.badgeRow}>
+              <Sparkles size={14} color={Colors.primary} />
+              <Text style={styles.categoryBadge}>{dailyCard.category}</Text>
+            </View>
+            <Text style={styles.motivationText}>"{dailyCard.front_content}"</Text>
+            {dailyCard.back_content && (
+              <Text style={styles.motivationSub}>{dailyCard.back_content}</Text>
+            )}
+          </Card>
+        </FadeInView>
       )}
 
       {/* Quick Access */}
-      <Text style={styles.sectionTitle}>{t.home.quickAccess}</Text>
-      <View style={styles.quickGrid}>
-        {quickItems.map(({ Icon, label, route, bg }) => (
-          <TouchableOpacity
-            key={label}
-            style={styles.quickItem}
-            onPress={() => router.push(route as any)}
-            activeOpacity={0.8}
-          >
-            <View style={[styles.quickIconBox, { backgroundColor: bg }]}>
-              <Icon size={22} color={Colors.navy} />
-            </View>
-            <Text style={styles.quickLabel}>{label}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <FadeInView delay={210}>
+        <Text style={styles.sectionTitle}>{t.home.quickAccess}</Text>
+        <View style={styles.quickGrid}>
+          {quickItems.map(({ Icon, label, route, bg }) => (
+            <ScalePressable
+              key={label}
+              style={styles.quickItemWrap}
+              onPress={() => router.push(route as any)}
+            >
+              <View style={styles.quickItem}>
+                <View style={[styles.quickIconBox, { backgroundColor: bg }]}>
+                  <Icon size={22} color={Colors.navy} />
+                </View>
+                <Text style={styles.quickLabel}>{label}</Text>
+              </View>
+            </ScalePressable>
+          ))}
+        </View>
+      </FadeInView>
 
       {/* Wellness Tip */}
-      <View style={styles.tipBox}>
-        <View style={styles.tipHeader}>
-          <Lightbulb size={16} color={Colors.navy} />
-          <Text style={styles.tipTitle}>{t.home.rememberTitle}</Text>
+      <FadeInView delay={280}>
+        <View style={styles.tipBox}>
+          <View style={styles.tipHeader}>
+            <Lightbulb size={16} color={Colors.navy} />
+            <Text style={styles.tipTitle}>{t.home.rememberTitle}</Text>
+          </View>
+          <Text style={styles.tipText}>{t.home.rememberText}</Text>
         </View>
-        <Text style={styles.tipText}>{t.home.rememberText}</Text>
-      </View>
+      </FadeInView>
     </ScrollView>
   );
 }
@@ -263,9 +271,8 @@ const styles = StyleSheet.create({
   motivationSub: { fontSize: FontSize.sm, color: '#4A5568', lineHeight: 20 },
   sectionTitle: { fontSize: FontSize.lg, fontWeight: '700', color: Colors.navy, marginBottom: Spacing.sm },
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.lg },
+  quickItemWrap: { flex: 1, minWidth: '45%' },
   quickItem: {
-    flex: 1,
-    minWidth: '45%',
     backgroundColor: Colors.white,
     borderRadius: Radius.lg,
     padding: Spacing.md,

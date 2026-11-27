@@ -20,6 +20,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Illustration } from '../../components/ui/Illustration';
 import { LanguageToggle } from '../../components/ui/LanguageToggle';
+import { FadeInView } from '../../components/ui/AnimatedPrimitives';
 import { Colors, Spacing, FontSize } from '../../constants/theme';
 
 type FormData = {
@@ -117,13 +118,16 @@ export default function SignUpScreen() {
           <LanguageToggle />
         </View>
 
-        <View style={styles.header}>
-          <Illustration name="signup" width={200} height={140} />
-          <Text style={styles.title}>{t.auth.createAccount}</Text>
-          <Text style={styles.subtitle}>{t.auth.signupSubtitle}</Text>
-        </View>
+        <FadeInView delay={0}>
+          <View style={styles.header}>
+            <Illustration name="signup" width={200} height={140} />
+            <Text style={styles.title}>{t.auth.createAccount}</Text>
+            <Text style={styles.subtitle}>{t.auth.signupSubtitle}</Text>
+          </View>
+        </FadeInView>
 
-        <View style={styles.form}>
+        <FadeInView delay={80}>
+          <View style={styles.form}>
           <Controller
             control={control}
             name="fullName"
@@ -234,7 +238,8 @@ export default function SignUpScreen() {
               <Text style={styles.link}>{t.auth.signIn}</Text>
             </Text>
           </TouchableOpacity>
-        </View>
+          </View>
+        </FadeInView>
       </ScrollView>
     </KeyboardAvoidingView>
   );

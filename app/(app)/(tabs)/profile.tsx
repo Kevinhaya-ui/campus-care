@@ -7,6 +7,7 @@ import { ShieldCheck } from 'lucide-react-native';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useTranslation } from '../../../src/i18n/useTranslation';
 import { LanguageToggle } from '../../../src/components/ui/LanguageToggle';
+import { FadeInView } from '../../../src/components/ui/AnimatedPrimitives';
 import { Colors, FontSize, Spacing, Radius } from '../../../src/constants/theme';
 
 export default function ProfileTab() {
@@ -27,47 +28,53 @@ export default function ProfileTab() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <View style={styles.avatarSection}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {profile?.full_name?.charAt(0).toUpperCase() ?? '?'}
-            </Text>
-          </View>
-          <Text style={styles.name}>{profile?.full_name ?? t.profile.defaultUser}</Text>
-          <Text style={styles.email}>{profile?.email}</Text>
-        </View>
-
-        <View style={styles.infoSection}>
-          {profile?.university && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>{t.profile.university}</Text>
-              <Text style={styles.infoValue}>{profile.university}</Text>
+        <FadeInView delay={0}>
+          <View style={styles.avatarSection}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {profile?.full_name?.charAt(0).toUpperCase() ?? '?'}
+              </Text>
             </View>
-          )}
-          {profile?.semester && (
+            <Text style={styles.name}>{profile?.full_name ?? t.profile.defaultUser}</Text>
+            <Text style={styles.email}>{profile?.email}</Text>
+          </View>
+        </FadeInView>
+
+        <FadeInView delay={80}>
+          <View style={styles.infoSection}>
+            {profile?.university && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>{t.profile.university}</Text>
+                <Text style={styles.infoValue}>{profile.university}</Text>
+              </View>
+            )}
+            {profile?.semester && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>{t.profile.semester}</Text>
+                <Text style={styles.infoValue}>{profile.semester}</Text>
+              </View>
+            )}
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>{t.profile.semester}</Text>
-              <Text style={styles.infoValue}>{profile.semester}</Text>
+              <Text style={styles.infoLabel}>{t.profile.language}</Text>
+              <LanguageToggle />
             </View>
-          )}
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{t.profile.language}</Text>
-            <LanguageToggle />
+            <View style={[styles.infoRow, styles.lastRow]}>
+              <Text style={styles.infoLabel}>{t.profile.aiStyle}</Text>
+              <Text style={styles.infoValue}>{profile?.communication_style ?? 'friendly'}</Text>
+            </View>
           </View>
-          <View style={[styles.infoRow, styles.lastRow]}>
-            <Text style={styles.infoLabel}>{t.profile.aiStyle}</Text>
-            <Text style={styles.infoValue}>{profile?.communication_style ?? 'friendly'}</Text>
+        </FadeInView>
+
+        <FadeInView delay={160}>
+          <View style={styles.privacyBox}>
+            <ShieldCheck size={20} color={Colors.primary} style={styles.privacyIcon} />
+            <Text style={styles.privacyText}>{t.profile.privacyNote}</Text>
           </View>
-        </View>
 
-        <View style={styles.privacyBox}>
-          <ShieldCheck size={20} color={Colors.primary} style={styles.privacyIcon} />
-          <Text style={styles.privacyText}>{t.profile.privacyNote}</Text>
-        </View>
-
-        <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
-          <Text style={styles.signOutText}>{t.profile.signOut}</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
+            <Text style={styles.signOutText}>{t.profile.signOut}</Text>
+          </TouchableOpacity>
+        </FadeInView>
       </ScrollView>
     </SafeAreaView>
   );

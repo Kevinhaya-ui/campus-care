@@ -9,10 +9,11 @@ export default function AppLayout() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
-      <Stack.Screen name="ai-chat" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="onboarding" options={{ gestureEnabled: false, animation: 'fade' }} />
+      <Stack.Screen name="journal-editor" options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="ai-chat" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
     </Stack>
   );
 }

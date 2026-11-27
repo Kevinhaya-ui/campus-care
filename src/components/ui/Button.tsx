@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
-  TouchableOpacity,
+  Animated,
+  Pressable,
   Text,
   ActivityIndicator,
   StyleSheet,
+  StyleProp,
   ViewStyle,
   TextStyle,
 } from 'react-native';
@@ -19,8 +21,8 @@ interface ButtonProps {
   size?: Size;
   loading?: boolean;
   disabled?: boolean;
-  style?: ViewStyle;
-  textStyle?: TextStyle;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
   fullWidth?: boolean;
 }
 
@@ -36,32 +38,48 @@ export function Button({
   fullWidth = true,
 }: ButtonProps) {
   const isDisabled = disabled || loading;
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const animateTo = (value: number) => {
+    Animated.spring(scale, {
+      toValue: value,
+      useNativeDriver: true,
+      speed: 40,
+      bounciness: 4,
+    }).start();
+  };
 
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={onPress}
       disabled={isDisabled}
-      style={[
-        styles.base,
-        styles[variant],
-        styles[`size_${size}`],
-        fullWidth && styles.fullWidth,
-        isDisabled && styles.disabled,
-        style,
-      ]}
-      activeOpacity={0.8}
+      onPressIn={() => !isDisabled && animateTo(0.97)}
+      onPressOut={() => animateTo(1)}
+      style={fullWidth ? styles.fullWidth : undefined}
     >
-      {loading ? (
-        <ActivityIndicator
-          color={variant === 'outline' || variant === 'ghost' ? Colors.primary : Colors.white}
-          size="small"
-        />
-      ) : (
-        <Text style={[styles.text, styles[`text_${variant}`], styles[`textSize_${size}`], textStyle]}>
-          {title}
-        </Text>
-      )}
-    </TouchableOpacity>
+      <Animated.View
+        style={[
+          styles.base,
+          styles[variant],
+          styles[`size_${size}`],
+          fullWidth && styles.fullWidth,
+          isDisabled && styles.disabled,
+          { transform: [{ scale }] },
+          style,
+        ]}
+      >
+        {loading ? (
+          <ActivityIndicator
+            color={variant === 'outline' || variant === 'ghost' ? Colors.primary : Colors.white}
+            size="small"
+          />
+        ) : (
+          <Text style={[styles.text, styles[`text_${variant}`], styles[`textSize_${size}`], textStyle]}>
+            {title}
+          </Text>
+        )}
+      </Animated.View>
+    </Pressable>
   );
 }
 
